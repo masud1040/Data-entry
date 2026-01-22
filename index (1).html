@@ -1,0 +1,2267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Generator Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Global Styles & Variables */
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a56d4;
+            --secondary: #7209b7;
+            --accent: #f72585;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+            --gray-light: #e9ecef;
+            --success: #4cc9f0;
+            --danger: #f72585;
+            --warning: #ff9e00;
+            --border-radius: 12px;
+            --box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7ff;
+            color: var(--dark);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* View Management */
+        .view {
+            display: none;
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+
+        .view.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Login Screen */
+        .login-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1000;
+        }
+
+        .login-container {
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            width: 100%;
+            max-width: 400px;
+            padding: 40px 30px;
+            text-align: center;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .app-logo {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .app-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: var(--dark);
+        }
+
+        .app-subtitle {
+            font-size: 1rem;
+            color: var(--gray);
+            margin-bottom: 30px;
+        }
+
+        .passcode-input {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+
+        .passcode-digit {
+            width: 50px;
+            height: 60px;
+            font-size: 1.8rem;
+            text-align: center;
+            margin: 0 5px;
+            border: 2px solid var(--gray-light);
+            border-radius: 8px;
+            background-color: white;
+            transition: var(--transition);
+        }
+
+        .passcode-digit:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+
+        .login-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 14px 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .login-btn:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .logout-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(67, 97, 238, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 10px 25px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logout-btn:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .message.success {
+            background-color: rgba(76, 201, 240, 0.2);
+            color: #0a7c9f;
+            border-left: 4px solid var(--success);
+            display: block;
+        }
+
+        .message.error {
+            background-color: rgba(247, 37, 133, 0.1);
+            color: var(--danger);
+            border-left: 4px solid var(--danger);
+            display: block;
+        }
+
+        .message.warning {
+            background-color: rgba(255, 158, 0, 0.1);
+            color: #cc7e00;
+            border-left: 4px solid var(--warning);
+            display: block;
+        }
+
+        /* Header & Navigation */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .header-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .back-btn {
+            background-color: var(--gray-light);
+            color: var(--dark);
+            border: none;
+            border-radius: 50px;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-btn:hover {
+            background-color: var(--gray);
+            color: white;
+        }
+
+        /* Home Screen */
+        .home-screen {
+            padding-top: 40px;
+        }
+
+        .welcome-card {
+            background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            color: white;
+            border-radius: var(--border-radius);
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: var(--box-shadow);
+        }
+
+        .welcome-title {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .welcome-text {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .modules-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .module-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--box-shadow);
+            transition: var(--transition);
+            cursor: pointer;
+            text-align: center;
+            border-top: 5px solid var(--primary);
+        }
+
+        .module-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .module-card:nth-child(2) {
+            border-top-color: var(--secondary);
+        }
+
+        .module-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        .module-card:nth-child(2) .module-icon {
+            color: var(--secondary);
+        }
+
+        .module-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .module-description {
+            color: var(--gray);
+            line-height: 1.6;
+        }
+
+        /* Form Styling */
+        .form-section {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: var(--box-shadow);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            color: var(--primary);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid var(--gray-light);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary);
+        }
+
+        .btn-secondary:hover {
+            background-color: #5a08a0;
+        }
+
+        .btn-accent {
+            background-color: var(--accent);
+        }
+
+        .btn-accent:hover {
+            background-color: #e11575;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+        }
+
+        .btn-success:hover {
+            background-color: #0a7c9f;
+        }
+
+        /* Dynamic Fields */
+        .dynamic-fields-container {
+            margin-bottom: 20px;
+        }
+
+        .dynamic-field {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: flex-end;
+        }
+
+        .dynamic-field .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .remove-field-btn {
+            background-color: var(--gray-light);
+            color: var(--dark);
+            border: none;
+            border-radius: 8px;
+            width: 40px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .remove-field-btn:hover {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        /* Player Input */
+        .player-input-container {
+            background-color: #f8f9ff;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            margin-bottom: 30px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .player-input-example {
+            font-size: 0.9rem;
+            color: var(--gray);
+            margin-top: 10px;
+            font-style: italic;
+        }
+
+        /* Draft Section */
+        .draft-container {
+            margin-top: 40px;
+        }
+
+        .draft-items {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding-right: 10px;
+        }
+
+        .draft-items::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .draft-items::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .draft-items::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+
+        .draft-item {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid var(--success);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .draft-item-info h4 {
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .draft-item-info p {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        .draft-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 8px 15px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .action-btn.edit {
+            background-color: rgba(67, 97, 238, 0.1);
+            color: var(--primary);
+        }
+
+        .action-btn.edit:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .action-btn.delete {
+            background-color: rgba(247, 37, 133, 0.1);
+            color: var(--danger);
+        }
+
+        .action-btn.delete:hover {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        /* Table for PDF Preview */
+        .pdf-preview {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 30px;
+            margin-top: 40px;
+            box-shadow: var(--box-shadow);
+            overflow: auto;
+        }
+
+        .preview-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--dark);
+            text-align: center;
+        }
+
+        .pdf-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        .pdf-table th {
+            background-color: var(--primary);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .pdf-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .pdf-table tr:hover {
+            background-color: #f8f9ff;
+        }
+
+        /* Print-specific styles */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            
+            .pdf-preview, .pdf-preview * {
+                visibility: visible;
+            }
+            
+            .pdf-preview {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                box-shadow: none;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px 0;
+            margin-top: 40px;
+            color: var(--gray);
+            border-top: 1px solid var(--gray-light);
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(150%);
+            transition: transform 0.4s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            background-color: var(--success);
+        }
+
+        .toast.error {
+            background-color: var(--danger);
+        }
+
+        .toast.warning {
+            background-color: var(--warning);
+        }
+
+        /* Chart Container */
+        .chart-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 30px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .dynamic-field {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .remove-field-btn {
+                width: 100%;
+                height: 48px;
+            }
+            
+            .draft-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .draft-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            
+            .modules-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .passcode-digit {
+                width: 45px;
+                height: 55px;
+                font-size: 1.5rem;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .logout-btn {
+                top: 10px;
+                right: 10px;
+                padding: 8px 15px;
+                font-size: 0.8rem;
+            }
+            
+            .chart-container {
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginView" class="login-screen">
+        <div class="login-container">
+            <div class="app-logo">
+                <i class="fas fa-file-pdf"></i>
+            </div>
+            <h1 class="app-title">PDF Generator Pro</h1>
+            <p class="app-subtitle">Secure, Professional PDF Generation</p>
+            
+            <div id="loginMessage" class="message"></div>
+            
+            <div class="passcode-input">
+                <input type="password" maxlength="1" class="passcode-digit" id="digit1" autocomplete="off">
+                <input type="password" maxlength="1" class="passcode-digit" id="digit2" autocomplete="off">
+                <input type="password" maxlength="1" class="passcode-digit" id="digit3" autocomplete="off">
+                <input type="password" maxlength="1" class="passcode-digit" id="digit4" autocomplete="off">
+            </div>
+            
+            <button id="loginBtn" class="login-btn">
+                <i class="fas fa-lock"></i> Unlock App
+            </button>
+            
+            <p id="setupInfo" style="margin-top: 20px; color: var(--gray); font-size: 0.9rem;">
+                Set up a 4-digit passcode for your first login
+            </p>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">Operation successful</span>
+    </div>
+
+    <!-- Main App Container (hidden until login) -->
+    <div id="appContainer" class="view">
+        <!-- Header with logout -->
+        <button id="logoutBtn" class="logout-btn no-print">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+
+        <!-- Home Screen -->
+        <div id="homeView" class="view active">
+            <div class="container home-screen">
+                <div class="welcome-card">
+                    <h2 class="welcome-title">Welcome to PDF Generator Pro</h2>
+                    <p class="welcome-text">Create professional PDFs for jersey forms and audit history with ease. All data is stored locally on your device.</p>
+                </div>
+                
+                <div class="modules-container">
+                    <div class="module-card" id="jerseyModuleBtn">
+                        <div class="module-icon">
+                            <i class="fas fa-tshirt"></i>
+                        </div>
+                        <h3 class="module-title">Jersey Form PDF</h3>
+                        <p class="module-description">
+                            Create and manage jersey forms for players. Add custom fields, store drafts, and generate professional PDFs.
+                        </p>
+                    </div>
+                    
+                    <div class="module-card" id="auditModuleBtn">
+                        <div class="module-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3 class="module-title">Audit History PDF</h3>
+                        <p class="module-description">
+                            Track financial audits with auto-calculated totals. Generate elegant financial reports in PDF format.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="footer">
+                    <p>PDF Generator Pro v1.0 • All data stored locally on your device</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Jersey Form Module -->
+        <div id="jerseyView" class="view">
+            <div class="container">
+                <div class="app-header">
+                    <div>
+                        <button id="backFromJersey" class="back-btn no-print">
+                            <i class="fas fa-arrow-left"></i> Back to Home
+                        </button>
+                    </div>
+                    <h1 class="header-title">Jersey Form PDF</h1>
+                </div>
+                
+                <div class="form-section">
+                    <h2 class="section-title"><i class="fas fa-heading"></i> Header Section</h2>
+                    <div class="form-group">
+                        <label class="form-label">Heading</label>
+                        <input type="text" id="jerseyHeading" class="form-input" placeholder="Enter heading (e.g., Team Jersey Form)" value="Team Jersey Form">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Sub-Heading</label>
+                        <input type="text" id="jerseySubHeading" class="form-input" placeholder="Enter sub-heading (e.g., Season 2023)" value="Season 2023">
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h2 class="section-title"><i class="fas fa-plus-circle"></i> Dynamic Input Fields</h2>
+                    <p style="margin-bottom: 15px; color: var(--gray);">Add custom fields to your form (e.g., Team Name, Position, etc.)</p>
+                    
+                    <div id="dynamicFieldsContainer" class="dynamic-fields-container">
+                        <!-- Dynamic fields will be added here -->
+                    </div>
+                    
+                    <button id="addFieldBtn" class="btn btn-secondary no-print">
+                        <i class="fas fa-plus"></i> Add Field
+                    </button>
+                </div>
+                
+                <div class="form-section">
+                    <h2 class="section-title"><i class="fas fa-user-plus"></i> Player Entry</h2>
+                    <p style="margin-bottom: 15px; color: var(--gray);">Enter player details in the fields below</p>
+                    
+                    <div class="player-input-container">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Player Name *</label>
+                                <input type="text" id="playerNameInput" class="form-input" placeholder="e.g., Masud Rahman">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Jersey Size *</label>
+                                <select id="playerSizeInput" class="form-input">
+                                    <option value="">Select Size</option>
+                                    <option value="XS">XS</option>
+                                    <option value="S">S</option>
+                                    <option value="M">M</option>
+                                    <option value="L">L</option>
+                                    <option value="XL">XL</option>
+                                    <option value="XXL">XXL</option>
+                                    <option value="XXXL">XXXL</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Jersey Number *</label>
+                                <input type="number" id="playerNumberInput" class="form-input" placeholder="e.g., 10" min="0" max="99">
+                            </div>
+                        </div>
+                        <div class="player-input-example">
+                            <i class="fas fa-info-circle"></i> All fields are required. Number must be between 0 and 99.
+                        </div>
+                    </div>
+                    
+                    <button id="addPlayerBtn" class="btn no-print">
+                        <i class="fas fa-plus"></i> Add Player to Draft
+                    </button>
+                </div>
+                
+                <div class="form-section draft-container">
+                    <h2 class="section-title"><i class="fas fa-save"></i> Draft System</h2>
+                    <p style="margin-bottom: 15px; color: var(--gray);">All added players are saved here. You can edit or delete them before generating the PDF.</p>
+                    
+                    <div id="draftItemsContainer" class="draft-items">
+                        <!-- Draft items will be added here -->
+                        <div style="text-align: center; padding: 40px; color: var(--gray);">
+                            <i class="fas fa-clipboard-list" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                            <p>No players in draft yet. Add players using the form above.</p>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 15px;" class="no-print">
+                        <button id="clearDraftBtn" class="btn btn-outline">
+                            <i class="fas fa-trash"></i> Clear All Drafts
+                        </button>
+                        <button id="generateJerseyPdfBtn" class="btn btn-accent">
+                            <i class="fas fa-file-pdf"></i> Generate Jersey PDF
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- PDF Preview Section -->
+                <div id="jerseyPdfPreview" class="pdf-preview no-print" style="display: none;">
+                    <h3 class="preview-title">Jersey Form PDF Preview</h3>
+                    <div id="jerseyPdfContent">
+                        <!-- PDF content will be generated here -->
+                    </div>
+                    <div style="text-align: center; margin-top: 30px;">
+                        <button id="printJerseyPdfBtn" class="btn">
+                            <i class="fas fa-print"></i> Print/Export as PDF
+                        </button>
+                        <button id="downloadJerseyPdfBtn" class="btn btn-success" style="margin-left: 15px;">
+                            <i class="fas fa-download"></i> Download PDF
+                        </button>
+                        <button id="closeJerseyPreviewBtn" class="btn btn-outline" style="margin-left: 15px;">
+                            <i class="fas fa-times"></i> Close Preview
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audit History Module -->
+        <div id="auditView" class="view">
+            <div class="container">
+                <div class="app-header">
+                    <div>
+                        <button id="backFromAudit" class="back-btn no-print">
+                            <i class="fas fa-arrow-left"></i> Back to Home
+                        </button>
+                    </div>
+                    <h1 class="header-title">Audit History PDF</h1>
+                </div>
+                
+                <div class="form-section">
+                    <h2 class="section-title"><i class="fas fa-heading"></i> Header Section</h2>
+                    <div class="form-group">
+                        <label class="form-label">Heading</label>
+                        <input type="text" id="auditHeading" class="form-input" placeholder="Enter heading (e.g., Financial Audit Report)" value="Financial Audit Report">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Sub-Heading</label>
+                        <input type="text" id="auditSubHeading" class="form-input" placeholder="Enter sub-heading (e.g., Q1 2023)" value="Q1 2023">
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h2 class="section-title"><i class="fas fa-plus-circle"></i> Audit Entries</h2>
+                    <p style="margin-bottom: 15px; color: var(--gray);">Add audit entries with subject and amount. Total will be calculated automatically.</p>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Subject *</label>
+                            <input type="text" id="auditSubjectInput" class="form-input" placeholder="e.g., Office Supplies">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Amount ($) *</label>
+                            <input type="number" id="auditAmountInput" class="form-input" placeholder="e.g., 250.00" min="0" step="0.01">
+                        </div>
+                    </div>
+                    
+                    <button id="addAuditEntryBtn" class="btn no-print">
+                        <i class="fas fa-plus"></i> Add Entry
+                    </button>
+                    
+                    <div id="auditEntriesContainer" class="draft-items" style="margin-top: 30px;">
+                        <!-- Audit entries will be added here -->
+                        <div style="text-align: center; padding: 40px; color: var(--gray);">
+                            <i class="fas fa-receipt" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                            <p>No audit entries yet. Add entries using the form above.</p>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;" class="no-print">
+                        <div>
+                            <strong style="font-size: 1.1rem;">Total Amount: $<span id="auditTotalAmount">0.00</span></strong>
+                        </div>
+                        <div style="display: flex; gap: 15px;">
+                            <button id="clearAuditBtn" class="btn btn-outline">
+                                <i class="fas fa-trash"></i> Clear All
+                            </button>
+                            <button id="generateAuditPdfBtn" class="btn btn-accent">
+                                <i class="fas fa-file-pdf"></i> Generate Audit PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Audit PDF Preview Section -->
+                <div id="auditPdfPreview" class="pdf-preview no-print" style="display: none;">
+                    <h3 class="preview-title">Audit History PDF Preview</h3>
+                    <div id="auditPdfContent">
+                        <!-- Audit PDF content will be generated here -->
+                    </div>
+                    <div style="text-align: center; margin-top: 30px;">
+                        <button id="printAuditPdfBtn" class="btn">
+                            <i class="fas fa-print"></i> Print/Export as PDF
+                        </button>
+                        <button id="downloadAuditPdfBtn" class="btn btn-success" style="margin-left: 15px;">
+                            <i class="fas fa-download"></i> Download PDF
+                        </button>
+                        <button id="closeAuditPreviewBtn" class="btn btn-outline" style="margin-left: 15px;">
+                            <i class="fas fa-times"></i> Close Preview
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Canvas for Chart Generation -->
+    <canvas id="chartCanvas" style="display: none;"></canvas>
+
+    <script>
+        // Main App State
+        const AppState = {
+            currentView: 'home',
+            passcode: null,
+            jerseyDrafts: [],
+            auditEntries: [],
+            dynamicFields: [],
+            totalAuditAmount: 0
+        };
+
+        // DOM Elements
+        const loginView = document.getElementById('loginView');
+        const appContainer = document.getElementById('appContainer');
+        const homeView = document.getElementById('homeView');
+        const jerseyView = document.getElementById('jerseyView');
+        const auditView = document.getElementById('auditView');
+        
+        // Login Elements
+        const passcodeDigits = document.querySelectorAll('.passcode-digit');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginMessage = document.getElementById('loginMessage');
+        const setupInfo = document.getElementById('setupInfo');
+        const logoutBtn = document.getElementById('logoutBtn');
+        
+        // Toast Elements
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+        
+        // Navigation Elements
+        const jerseyModuleBtn = document.getElementById('jerseyModuleBtn');
+        const auditModuleBtn = document.getElementById('auditModuleBtn');
+        const backFromJersey = document.getElementById('backFromJersey');
+        const backFromAudit = document.getElementById('backFromAudit');
+        
+        // Jersey Module Elements
+        const jerseyHeading = document.getElementById('jerseyHeading');
+        const jerseySubHeading = document.getElementById('jerseySubHeading');
+        const dynamicFieldsContainer = document.getElementById('dynamicFieldsContainer');
+        const addFieldBtn = document.getElementById('addFieldBtn');
+        const playerNameInput = document.getElementById('playerNameInput');
+        const playerSizeInput = document.getElementById('playerSizeInput');
+        const playerNumberInput = document.getElementById('playerNumberInput');
+        const addPlayerBtn = document.getElementById('addPlayerBtn');
+        const draftItemsContainer = document.getElementById('draftItemsContainer');
+        const clearDraftBtn = document.getElementById('clearDraftBtn');
+        const generateJerseyPdfBtn = document.getElementById('generateJerseyPdfBtn');
+        const jerseyPdfPreview = document.getElementById('jerseyPdfPreview');
+        const jerseyPdfContent = document.getElementById('jerseyPdfContent');
+        const printJerseyPdfBtn = document.getElementById('printJerseyPdfBtn');
+        const downloadJerseyPdfBtn = document.getElementById('downloadJerseyPdfBtn');
+        const closeJerseyPreviewBtn = document.getElementById('closeJerseyPreviewBtn');
+        
+        // Audit Module Elements
+        const auditHeading = document.getElementById('auditHeading');
+        const auditSubHeading = document.getElementById('auditSubHeading');
+        const auditSubjectInput = document.getElementById('auditSubjectInput');
+        const auditAmountInput = document.getElementById('auditAmountInput');
+        const addAuditEntryBtn = document.getElementById('addAuditEntryBtn');
+        const auditEntriesContainer = document.getElementById('auditEntriesContainer');
+        const auditTotalAmount = document.getElementById('auditTotalAmount');
+        const clearAuditBtn = document.getElementById('clearAuditBtn');
+        const generateAuditPdfBtn = document.getElementById('generateAuditPdfBtn');
+        const auditPdfPreview = document.getElementById('auditPdfPreview');
+        const auditPdfContent = document.getElementById('auditPdfContent');
+        const printAuditPdfBtn = document.getElementById('printAuditPdfBtn');
+        const downloadAuditPdfBtn = document.getElementById('downloadAuditPdfBtn');
+        const closeAuditPreviewBtn = document.getElementById('closeAuditPreviewBtn');
+        
+        // Chart Elements
+        const chartCanvas = document.getElementById('chartCanvas');
+
+        // Initialize App
+        function initApp() {
+            // Check if passcode exists in localStorage
+            const savedPasscode = localStorage.getItem('pdfAppPasscode');
+            
+            if (savedPasscode) {
+                setupInfo.textContent = 'Enter your 4-digit passcode to unlock the app';
+                AppState.passcode = savedPasscode;
+            } else {
+                setupInfo.textContent = 'Set up a 4-digit passcode for your first login';
+            }
+            
+            // Load saved data
+            loadSavedData();
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Focus first passcode digit
+            if (passcodeDigits.length > 0) {
+                passcodeDigits[0].focus();
+            }
+            
+            // Auto-login if already logged in (for session persistence)
+            const isLoggedIn = localStorage.getItem('isLoggedIn');
+            if (isLoggedIn === 'true' && AppState.passcode) {
+                // Auto login (for demo purposes, in real app you'd verify passcode)
+                setTimeout(() => {
+                    hideLoginScreen();
+                }, 500);
+            }
+        }
+
+        // Load saved data from localStorage
+        function loadSavedData() {
+            // Load jersey drafts
+            const savedJerseyDrafts = localStorage.getItem('jerseyDrafts');
+            if (savedJerseyDrafts) {
+                AppState.jerseyDrafts = JSON.parse(savedJerseyDrafts);
+                renderDraftItems();
+            }
+            
+            // Load audit entries
+            const savedAuditEntries = localStorage.getItem('auditEntries');
+            if (savedAuditEntries) {
+                AppState.auditEntries = JSON.parse(savedAuditEntries);
+                calculateAuditTotal();
+                renderAuditEntries();
+            }
+            
+            // Load dynamic fields
+            const savedDynamicFields = localStorage.getItem('dynamicFields');
+            if (savedDynamicFields) {
+                AppState.dynamicFields = JSON.parse(savedDynamicFields);
+                renderDynamicFields();
+            }
+        }
+
+        // Save data to localStorage
+        function saveToLocalStorage() {
+            localStorage.setItem('jerseyDrafts', JSON.stringify(AppState.jerseyDrafts));
+            localStorage.setItem('auditEntries', JSON.stringify(AppState.auditEntries));
+            localStorage.setItem('dynamicFields', JSON.stringify(AppState.dynamicFields));
+        }
+
+        // Setup all event listeners
+        function setupEventListeners() {
+            // Login functionality
+            passcodeDigits.forEach((digit, index) => {
+                digit.addEventListener('input', (e) => {
+                    // Auto-focus next digit
+                    if (e.target.value.length === 1 && index < passcodeDigits.length - 1) {
+                        passcodeDigits[index + 1].focus();
+                    }
+                    
+                    // Remove any non-digit characters
+                    e.target.value = e.target.value.replace(/\D/g, '');
+                    
+                    // Auto-submit when all digits are filled
+                    if (index === passcodeDigits.length - 1 && e.target.value.length === 1) {
+                        const allFilled = Array.from(passcodeDigits).every(d => d.value.length === 1);
+                        if (allFilled) {
+                            setTimeout(() => loginBtn.click(), 100);
+                        }
+                    }
+                });
+                
+                digit.addEventListener('keydown', (e) => {
+                    // Handle backspace to focus previous digit
+                    if (e.key === 'Backspace' && e.target.value.length === 0 && index > 0) {
+                        passcodeDigits[index - 1].focus();
+                    }
+                    
+                    // Handle arrow keys
+                    if (e.key === 'ArrowLeft' && index > 0) {
+                        passcodeDigits[index - 1].focus();
+                    }
+                    if (e.key === 'ArrowRight' && index < passcodeDigits.length - 1) {
+                        passcodeDigits[index + 1].focus();
+                    }
+                });
+                
+                // Prevent paste on passcode fields
+                digit.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    showToast('Please type your passcode digit by digit', 'warning');
+                });
+            });
+            
+            loginBtn.addEventListener('click', handleLogin);
+            logoutBtn.addEventListener('click', handleLogout);
+            
+            // Navigation
+            jerseyModuleBtn.addEventListener('click', () => switchView('jersey'));
+            auditModuleBtn.addEventListener('click', () => switchView('audit'));
+            backFromJersey.addEventListener('click', () => switchView('home'));
+            backFromAudit.addEventListener('click', () => switchView('home'));
+            
+            // Jersey Module
+            addFieldBtn.addEventListener('click', addDynamicField);
+            addPlayerBtn.addEventListener('click', addPlayerToDraft);
+            clearDraftBtn.addEventListener('click', clearAllDrafts);
+            generateJerseyPdfBtn.addEventListener('click', generateJerseyPdf);
+            printJerseyPdfBtn.addEventListener('click', () => window.print());
+            downloadJerseyPdfBtn.addEventListener('click', downloadJerseyPdf);
+            closeJerseyPreviewBtn.addEventListener('click', () => {
+                jerseyPdfPreview.style.display = 'none';
+                showToast('PDF preview closed', 'success');
+            });
+            
+            // Audit Module
+            addAuditEntryBtn.addEventListener('click', addAuditEntry);
+            clearAuditBtn.addEventListener('click', clearAllAuditEntries);
+            generateAuditPdfBtn.addEventListener('click', generateAuditPdf);
+            printAuditPdfBtn.addEventListener('click', () => window.print());
+            downloadAuditPdfBtn.addEventListener('click', downloadAuditPdf);
+            closeAuditPreviewBtn.addEventListener('click', () => {
+                auditPdfPreview.style.display = 'none';
+                showToast('PDF preview closed', 'success');
+            });
+            
+            // Allow Enter key to add player/audit entry
+            playerNameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addPlayerToDraft();
+            });
+            
+            playerNumberInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addPlayerToDraft();
+            });
+            
+            auditAmountInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addAuditEntry();
+            });
+            
+            // Auto-save when inputs change
+            jerseyHeading.addEventListener('input', () => saveToLocalStorage());
+            jerseySubHeading.addEventListener('input', () => saveToLocalStorage());
+            auditHeading.addEventListener('input', () => saveToLocalStorage());
+            auditSubHeading.addEventListener('input', () => saveToLocalStorage());
+        }
+
+        // Handle login/logout
+        function handleLogin() {
+            const enteredPasscode = Array.from(passcodeDigits)
+                .map(digit => digit.value)
+                .join('');
+            
+            if (enteredPasscode.length !== 4) {
+                showLoginMessage('Please enter a 4-digit passcode', 'error');
+                // Highlight empty digits
+                passcodeDigits.forEach(digit => {
+                    if (!digit.value) {
+                        digit.style.borderColor = 'var(--danger)';
+                        setTimeout(() => {
+                            digit.style.borderColor = '';
+                        }, 2000);
+                    }
+                });
+                return;
+            }
+            
+            // If passcode is not set yet, save it
+            if (!AppState.passcode) {
+                localStorage.setItem('pdfAppPasscode', enteredPasscode);
+                AppState.passcode = enteredPasscode;
+                showLoginMessage('Passcode set successfully! Redirecting...', 'success');
+                
+                // Auto-login after setting passcode
+                setTimeout(() => {
+                    hideLoginScreen();
+                    showToast('Welcome to PDF Generator Pro!', 'success');
+                }, 1000);
+            } 
+            // Otherwise, verify the passcode
+            else if (enteredPasscode === AppState.passcode) {
+                showLoginMessage('Login successful! Redirecting...', 'success');
+                
+                setTimeout(() => {
+                    hideLoginScreen();
+                    showToast('Welcome back!', 'success');
+                }, 500);
+            } else {
+                showLoginMessage('Incorrect passcode. Please try again.', 'error');
+                // Clear passcode fields
+                passcodeDigits.forEach(digit => {
+                    digit.value = '';
+                    digit.style.borderColor = 'var(--danger)';
+                    setTimeout(() => {
+                        digit.style.borderColor = '';
+                    }, 2000);
+                });
+                passcodeDigits[0].focus();
+            }
+        }
+        
+        function hideLoginScreen() {
+            loginView.style.opacity = '0';
+            loginView.style.transform = 'translateY(-20px)';
+            loginView.style.transition = 'opacity 0.5s, transform 0.5s';
+            
+            setTimeout(() => {
+                loginView.style.display = 'none';
+                appContainer.style.display = 'block';
+                setTimeout(() => {
+                    appContainer.classList.add('active');
+                    switchView('home');
+                }, 10);
+                
+                // Save login state
+                localStorage.setItem('isLoggedIn', 'true');
+            }, 500);
+        }
+
+        function handleLogout() {
+            // Clear login state
+            localStorage.setItem('isLoggedIn', 'false');
+            
+            // Clear passcode fields
+            passcodeDigits.forEach(digit => {
+                digit.value = '';
+                digit.style.borderColor = '';
+            });
+            
+            // Show login screen
+            loginView.style.display = 'flex';
+            setTimeout(() => {
+                loginView.style.opacity = '1';
+                loginView.style.transform = 'translateY(0)';
+                appContainer.classList.remove('active');
+                appContainer.style.display = 'none';
+                passcodeDigits[0].focus();
+            }, 10);
+            
+            showLoginMessage('You have been logged out successfully', 'success');
+        }
+
+        // Show message in login screen
+        function showLoginMessage(text, type) {
+            loginMessage.textContent = text;
+            loginMessage.className = 'message ' + type;
+            
+            // Auto-hide success messages after 3 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    loginMessage.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Show toast notification
+        function showToast(text, type) {
+            toastMessage.textContent = text;
+            toast.className = `toast ${type}`;
+            
+            // Show toast
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            // Hide toast after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Switch between views
+        function switchView(viewName) {
+            // Hide all views
+            homeView.classList.remove('active');
+            jerseyView.classList.remove('active');
+            auditView.classList.remove('active');
+            
+            // Show selected view
+            if (viewName === 'home') {
+                homeView.classList.add('active');
+                showToast('Welcome to Dashboard', 'success');
+            } else if (viewName === 'jersey') {
+                jerseyView.classList.add('active');
+                showToast('Jersey Form Module', 'success');
+            } else if (viewName === 'audit') {
+                auditView.classList.add('active');
+                showToast('Audit History Module', 'success');
+            }
+            
+            AppState.currentView = viewName;
+        }
+
+        // Jersey Module Functions
+        function addDynamicField() {
+            const fieldId = Date.now(); // Unique ID
+            AppState.dynamicFields.push({
+                id: fieldId,
+                label: '',
+                value: ''
+            });
+            
+            renderDynamicFields();
+            saveToLocalStorage();
+            showToast('Dynamic field added', 'success');
+        }
+
+        function renderDynamicFields() {
+            dynamicFieldsContainer.innerHTML = '';
+            
+            if (AppState.dynamicFields.length === 0) {
+                dynamicFieldsContainer.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: var(--gray);">
+                        <p>No custom fields added yet. Click "Add Field" to create one.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            AppState.dynamicFields.forEach((field, index) => {
+                const fieldElement = document.createElement('div');
+                fieldElement.className = 'dynamic-field';
+                fieldElement.innerHTML = `
+                    <div class="form-group">
+                        <label class="form-label">Label ${index + 1}</label>
+                        <input type="text" class="form-input dynamic-field-label" 
+                               data-id="${field.id}" value="${field.label}" 
+                               placeholder="e.g., Team Name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Value ${index + 1}</label>
+                        <input type="text" class="form-input dynamic-field-value" 
+                               data-id="${field.id}" value="${field.value}" 
+                               placeholder="Enter value">
+                    </div>
+                    <button class="remove-field-btn" data-id="${field.id}" title="Remove Field">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                
+                dynamicFieldsContainer.appendChild(fieldElement);
+            });
+            
+            // Add event listeners to dynamic fields
+            document.querySelectorAll('.dynamic-field-label').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const id = parseInt(e.target.dataset.id);
+                    const field = AppState.dynamicFields.find(f => f.id === id);
+                    if (field) field.label = e.target.value;
+                    saveToLocalStorage();
+                });
+            });
+            
+            document.querySelectorAll('.dynamic-field-value').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const id = parseInt(e.target.dataset.id);
+                    const field = AppState.dynamicFields.find(f => f.id === id);
+                    if (field) field.value = e.target.value;
+                    saveToLocalStorage();
+                });
+            });
+            
+            document.querySelectorAll('.remove-field-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = parseInt(e.target.closest('button').dataset.id);
+                    AppState.dynamicFields = AppState.dynamicFields.filter(f => f.id !== id);
+                    renderDynamicFields();
+                    saveToLocalStorage();
+                    showToast('Field removed', 'success');
+                });
+            });
+        }
+
+        function addPlayerToDraft() {
+            const playerName = playerNameInput.value.trim();
+            const jerseySize = playerSizeInput.value;
+            const jerseyNumber = playerNumberInput.value;
+            
+            // Validate inputs
+            if (!playerName) {
+                showToast('Please enter player name', 'warning');
+                playerNameInput.focus();
+                return;
+            }
+            
+            if (!jerseySize) {
+                showToast('Please select jersey size', 'warning');
+                playerSizeInput.focus();
+                return;
+            }
+            
+            if (!jerseyNumber || jerseyNumber < 0 || jerseyNumber > 99) {
+                showToast('Please enter a valid jersey number (0-99)', 'warning');
+                playerNumberInput.focus();
+                return;
+            }
+            
+            // Add to drafts
+            const draftId = Date.now();
+            AppState.jerseyDrafts.push({
+                id: draftId,
+                name: playerName,
+                size: jerseySize,
+                number: jerseyNumber
+            });
+            
+            // Clear inputs
+            playerNameInput.value = '';
+            playerSizeInput.value = '';
+            playerNumberInput.value = '';
+            playerNameInput.focus();
+            
+            // Update UI and save
+            renderDraftItems();
+            saveToLocalStorage();
+            
+            // Show success message
+            showToast(`Player "${playerName}" added to draft`, 'success');
+        }
+
+        function renderDraftItems() {
+            draftItemsContainer.innerHTML = '';
+            
+            if (AppState.jerseyDrafts.length === 0) {
+                draftItemsContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--gray);">
+                        <i class="fas fa-clipboard-list" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                        <p>No players in draft yet. Add players using the form above.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            AppState.jerseyDrafts.forEach((draft, index) => {
+                const draftElement = document.createElement('div');
+                draftElement.className = 'draft-item';
+                draftElement.innerHTML = `
+                    <div class="draft-item-info">
+                        <h4>${draft.name} <span style="color: var(--primary); font-size: 0.9rem;">#${draft.number}</span></h4>
+                        <p>Size: <strong>${draft.size}</strong> | Number: <strong>${draft.number}</strong></p>
+                    </div>
+                    <div class="draft-actions">
+                        <button class="action-btn edit" data-id="${draft.id}" title="Edit Player">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="action-btn delete" data-id="${draft.id}" title="Delete Player">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                `;
+                
+                draftItemsContainer.appendChild(draftElement);
+            });
+            
+            // Add event listeners to edit/delete buttons
+            document.querySelectorAll('.action-btn.edit').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = parseInt(e.target.closest('button').dataset.id);
+                    editDraftItem(id);
+                });
+            });
+            
+            document.querySelectorAll('.action-btn.delete').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = parseInt(e.target.closest('button').dataset.id);
+                    deleteDraftItem(id);
+                });
+            });
+        }
+
+        function editDraftItem(id) {
+            const draft = AppState.jerseyDrafts.find(d => d.id === id);
+            if (!draft) return;
+            
+            // Fill form with current values
+            playerNameInput.value = draft.name;
+            playerSizeInput.value = draft.size;
+            playerNumberInput.value = draft.number;
+            
+            // Remove from drafts
+            AppState.jerseyDrafts = AppState.jerseyDrafts.filter(d => d.id !== id);
+            renderDraftItems();
+            saveToLocalStorage();
+            
+            // Focus on name input
+            playerNameInput.focus();
+            
+            showToast('Player loaded for editing. Update values and click "Add Player"', 'success');
+        }
+
+        function deleteDraftItem(id) {
+            if (confirm('Are you sure you want to delete this player?')) {
+                const player = AppState.jerseyDrafts.find(d => d.id === id);
+                AppState.jerseyDrafts = AppState.jerseyDrafts.filter(d => d.id !== id);
+                renderDraftItems();
+                saveToLocalStorage();
+                
+                showToast(`Player "${player.name}" deleted`, 'success');
+            }
+        }
+
+        function clearAllDrafts() {
+            if (AppState.jerseyDrafts.length === 0) {
+                showToast('No drafts to clear', 'warning');
+                return;
+            }
+            
+            if (confirm('Are you sure you want to clear all drafts? This action cannot be undone.')) {
+                AppState.jerseyDrafts = [];
+                renderDraftItems();
+                saveToLocalStorage();
+                
+                showToast('All drafts cleared', 'success');
+            }
+        }
+
+        function generateJerseyPdf() {
+            if (AppState.jerseyDrafts.length === 0) {
+                showToast('Please add at least one player to generate a PDF', 'warning');
+                return;
+            }
+            
+            // Build PDF content
+            let pdfHTML = `
+                <div style="padding: 20px; font-family: Arial, sans-serif;">
+                    <h1 style="text-align: center; color: #4361ee; margin-bottom: 10px; font-size: 28px;">${jerseyHeading.value || 'Team Jersey Form'}</h1>
+                    <h3 style="text-align: center; color: #6c757d; margin-bottom: 30px; font-size: 18px;">${jerseySubHeading.value || 'Season 2023'}</h3>
+            `;
+            
+            // Add dynamic fields if any (only on first page)
+            if (AppState.dynamicFields.length > 0) {
+                pdfHTML += '<div style="margin-bottom: 30px; padding: 15px; background-color: #f8f9fa; border-radius: 8px;">';
+                AppState.dynamicFields.forEach(field => {
+                    if (field.label && field.value) {
+                        pdfHTML += `<p style="margin: 5px 0;"><strong>${field.label}:</strong> ${field.value}</p>`;
+                    }
+                });
+                pdfHTML += '</div>';
+            }
+            
+            // Create table
+            pdfHTML += `
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                    <thead>
+                        <tr style="background-color: #4361ee; color: white;">
+                            <th style="padding: 15px; text-align: left; font-weight: bold;">Player Name</th>
+                            <th style="padding: 15px; text-align: left; font-weight: bold;">Jersey Size</th>
+                            <th style="padding: 15px; text-align: left; font-weight: bold;">Jersey Number</th>
+                            <th style="padding: 15px; text-align: left; font-weight: bold;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            AppState.jerseyDrafts.forEach(player => {
+                pdfHTML += `
+                    <tr style="border-bottom: 1px solid #e9ecef;">
+                        <td style="padding: 12px 15px;">${player.name}</td>
+                        <td style="padding: 12px 15px;">${player.size}</td>
+                        <td style="padding: 12px 15px;">${player.number}</td>
+                        <td style="padding: 12px 15px; color: #4cc9f0;">Confirmed</td>
+                    </tr>
+                `;
+            });
+            
+            pdfHTML += `
+                    </tbody>
+                </table>
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef; text-align: right; font-style: italic; color: #6c757d;">
+                    <p>Total Players: ${AppState.jerseyDrafts.length}</p>
+                    <p>Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
+                    <p>PDF Generator Pro • All rights reserved</p>
+                </div>
+            `;
+            
+            pdfHTML += '</div>';
+            
+            // Display preview
+            jerseyPdfContent.innerHTML = pdfHTML;
+            jerseyPdfPreview.style.display = 'block';
+            
+            // Scroll to preview
+            jerseyPdfPreview.scrollIntoView({ behavior: 'smooth' });
+            
+            showToast('PDF generated successfully. Click "Download PDF" to save.', 'success');
+        }
+
+        function downloadJerseyPdf() {
+            if (AppState.jerseyDrafts.length === 0) {
+                showToast('No data to download', 'warning');
+                return;
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            // Page dimensions
+            const pageWidth = 210;
+            const pageHeight = 297;
+            const margin = 20;
+            const bottomMargin = 20.32; // 0.8 inch in mm
+            
+            let currentPage = 1;
+            let yPos = margin;
+            
+            // Function to add a new page
+            const addNewPage = () => {
+                doc.addPage();
+                currentPage++;
+                yPos = margin;
+                
+                // Add header on every page
+                doc.setFontSize(22);
+                doc.setTextColor(67, 97, 238);
+                doc.text(jerseyHeading.value || 'Team Jersey Form', pageWidth / 2, yPos, { align: 'center' });
+                yPos += 10;
+                
+                doc.setFontSize(14);
+                doc.setTextColor(108, 117, 125);
+                doc.text(jerseySubHeading.value || 'Season 2023', pageWidth / 2, yPos, { align: 'center' });
+                yPos += 20;
+            };
+            
+            // Add first page header
+            doc.setFontSize(22);
+            doc.setTextColor(67, 97, 238);
+            doc.text(jerseyHeading.value || 'Team Jersey Form', pageWidth / 2, yPos, { align: 'center' });
+            yPos += 10;
+            
+            doc.setFontSize(14);
+            doc.setTextColor(108, 117, 125);
+            doc.text(jerseySubHeading.value || 'Season 2023', pageWidth / 2, yPos, { align: 'center' });
+            yPos += 15;
+            
+            // Add dynamic fields only on first page
+            if (AppState.dynamicFields.length > 0) {
+                doc.setFontSize(12);
+                doc.setTextColor(33, 37, 41);
+                AppState.dynamicFields.forEach(field => {
+                    if (field.label && field.value) {
+                        // Check if we need a new page before adding field
+                        if (yPos > pageHeight - bottomMargin - 10) {
+                            addNewPage();
+                        }
+                        
+                        doc.text(`${field.label}: ${field.value}`, margin, yPos);
+                        yPos += 7;
+                    }
+                });
+                yPos += 10;
+            }
+            
+            // Add table header
+            if (yPos > pageHeight - bottomMargin - 20) {
+                addNewPage();
+            }
+            
+            doc.setFillColor(67, 97, 238);
+            doc.rect(margin, yPos, pageWidth - 2 * margin, 10, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(12);
+            doc.text('Player Name', margin + 5, yPos + 7);
+            doc.text('Jersey Size', margin + 70, yPos + 7);
+            doc.text('Jersey Number', margin + 110, yPos + 7);
+            doc.text('Status', margin + 150, yPos + 7);
+            
+            yPos += 15;
+            
+            // Add player rows with pagination
+            AppState.jerseyDrafts.forEach((player, index) => {
+                // Check if we need a new page before adding row
+                if (yPos > pageHeight - bottomMargin - 10) {
+                    addNewPage();
+                    
+                    // Add table header on new page
+                    doc.setFillColor(67, 97, 238);
+                    doc.rect(margin, yPos, pageWidth - 2 * margin, 10, 'F');
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFontSize(12);
+                    doc.text('Player Name', margin + 5, yPos + 7);
+                    doc.text('Jersey Size', margin + 70, yPos + 7);
+                    doc.text('Jersey Number', margin + 110, yPos + 7);
+                    doc.text('Status', margin + 150, yPos + 7);
+                    yPos += 15;
+                }
+                
+                // Alternate row background
+                if (index % 2 === 0) {
+                    doc.setFillColor(248, 249, 255);
+                    doc.rect(margin, yPos - 5, pageWidth - 2 * margin, 10, 'F');
+                }
+                
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(11);
+                doc.text(player.name, margin + 5, yPos);
+                doc.text(player.size, margin + 70, yPos);
+                doc.text(player.number.toString(), margin + 110, yPos);
+                doc.setTextColor(76, 201, 240);
+                doc.text('Confirmed', margin + 150, yPos);
+                doc.setTextColor(0, 0, 0);
+                
+                yPos += 10;
+            });
+            
+            yPos += 10;
+            
+            // Add footer on last page
+            doc.setFontSize(10);
+            doc.setTextColor(108, 117, 125);
+            doc.text(`Total Players: ${AppState.jerseyDrafts.length}`, margin, yPos);
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, margin, yPos + 6);
+            doc.text('PDF Generator Pro • All rights reserved', pageWidth / 2, yPos + 6, { align: 'center' });
+            
+            // Save the PDF
+            doc.save(`Jersey-Form-${new Date().getTime()}.pdf`);
+            showToast('PDF downloaded successfully!', 'success');
+        }
+
+        // Audit Module Functions
+        function addAuditEntry() {
+            const subject = auditSubjectInput.value.trim();
+            const amount = parseFloat(auditAmountInput.value);
+            
+            if (!subject) {
+                showToast('Please enter a subject for the audit entry', 'warning');
+                auditSubjectInput.focus();
+                return;
+            }
+            
+            if (isNaN(amount) || amount <= 0) {
+                showToast('Please enter a valid amount greater than 0', 'warning');
+                auditAmountInput.focus();
+                return;
+            }
+            
+            // Add to audit entries
+            const entryId = Date.now();
+            AppState.auditEntries.push({
+                id: entryId,
+                subject: subject,
+                amount: amount
+            });
+            
+            // Clear inputs
+            auditSubjectInput.value = '';
+            auditAmountInput.value = '';
+            auditSubjectInput.focus();
+            
+            // Update UI and save
+            calculateAuditTotal();
+            renderAuditEntries();
+            saveToLocalStorage();
+            
+            showToast('Audit entry added successfully', 'success');
+        }
+
+        function calculateAuditTotal() {
+            AppState.totalAuditAmount = AppState.auditEntries.reduce((total, entry) => total + entry.amount, 0);
+            auditTotalAmount.textContent = AppState.totalAuditAmount.toFixed(2);
+        }
+
+        function renderAuditEntries() {
+            auditEntriesContainer.innerHTML = '';
+            
+            if (AppState.auditEntries.length === 0) {
+                auditEntriesContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--gray);">
+                        <i class="fas fa-receipt" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                        <p>No audit entries yet. Add entries using the form above.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            AppState.auditEntries.forEach((entry, index) => {
+                const entryElement = document.createElement('div');
+                entryElement.className = 'draft-item';
+                entryElement.innerHTML = `
+                    <div class="draft-item-info">
+                        <h4>${entry.subject}</h4>
+                        <p>Amount: <strong>$${entry.amount.toFixed(2)}</strong></p>
+                    </div>
+                    <div class="draft-actions">
+                        <button class="action-btn edit" data-id="${entry.id}" title="Edit Entry">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="action-btn delete" data-id="${entry.id}" title="Delete Entry">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                `;
+                
+                auditEntriesContainer.appendChild(entryElement);
+            });
+            
+            // Add event listeners to edit/delete buttons
+            document.querySelectorAll('.action-btn.edit').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = parseInt(e.target.closest('button').dataset.id);
+                    editAuditEntry(id);
+                });
+            });
+            
+            document.querySelectorAll('.action-btn.delete').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const id = parseInt(e.target.closest('button').dataset.id);
+                    deleteAuditEntry(id);
+                });
+            });
+        }
+
+        function editAuditEntry(id) {
+            const entry = AppState.auditEntries.find(e => e.id === id);
+            if (!entry) return;
+            
+            // Fill form with current values
+            auditSubjectInput.value = entry.subject;
+            auditAmountInput.value = entry.amount;
+            
+            // Remove from entries
+            AppState.auditEntries = AppState.auditEntries.filter(e => e.id !== id);
+            calculateAuditTotal();
+            renderAuditEntries();
+            saveToLocalStorage();
+            
+            // Focus on subject input
+            auditSubjectInput.focus();
+            
+            showToast('Audit entry loaded for editing. Update values and click "Add Entry"', 'success');
+        }
+
+        function deleteAuditEntry(id) {
+            if (confirm('Are you sure you want to delete this audit entry?')) {
+                const entry = AppState.auditEntries.find(e => e.id === id);
+                AppState.auditEntries = AppState.auditEntries.filter(e => e.id !== id);
+                calculateAuditTotal();
+                renderAuditEntries();
+                saveToLocalStorage();
+                
+                showToast(`Audit entry "${entry.subject}" deleted`, 'success');
+            }
+        }
+
+        function clearAllAuditEntries() {
+            if (AppState.auditEntries.length === 0) {
+                showToast('No audit entries to clear', 'warning');
+                return;
+            }
+            
+            if (confirm('Are you sure you want to clear all audit entries? This action cannot be undone.')) {
+                AppState.auditEntries = [];
+                calculateAuditTotal();
+                renderAuditEntries();
+                saveToLocalStorage();
+                
+                showToast('All audit entries cleared', 'success');
+            }
+        }
+
+        function generateAuditPdf() {
+            if (AppState.auditEntries.length === 0) {
+                showToast('Please add at least one audit entry to generate a PDF', 'warning');
+                return;
+            }
+            
+            // Build PDF content
+            let pdfHTML = `
+                <div style="padding: 20px; font-family: Arial, sans-serif;">
+                    <h1 style="text-align: center; color: #7209b7; margin-bottom: 10px; font-size: 28px;">${auditHeading.value || 'Financial Audit Report'}</h1>
+                    <h3 style="text-align: center; color: #6c757d; margin-bottom: 30px; font-size: 18px;">${auditSubHeading.value || 'Q1 2023'}</h3>
+                    
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                        <thead>
+                            <tr style="background-color: #7209b7; color: white;">
+                                <th style="padding: 15px; text-align: left; font-weight: bold;">Subject</th>
+                                <th style="padding: 15px; text-align: left; font-weight: bold;">Amount ($)</th>
+                                <th style="padding: 15px; text-align: left; font-weight: bold;">Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            AppState.auditEntries.forEach(entry => {
+                pdfHTML += `
+                    <tr style="border-bottom: 1px solid #e9ecef;">
+                        <td style="padding: 12px 15px;">${entry.subject}</td>
+                        <td style="padding: 12px 15px;">$${entry.amount.toFixed(2)}</td>
+                        <td style="padding: 12px 15px;">-</td>
+                    </tr>
+                `;
+            });
+            
+            pdfHTML += `
+                        </tbody>
+                    </table>
+                    
+                    <div style="margin-top: 30px; padding: 20px; background-color: #f8f9ff; border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h3 style="color: #212529; margin-bottom: 5px; font-size: 18px;">Summary</h3>
+                                <p style="color: #6c757d;">Total Entries: ${AppState.auditEntries.length}</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <h2 style="color: #7209b7; font-size: 24px;">Total: $${AppState.totalAuditAmount.toFixed(2)}</h2>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef; text-align: right; font-style: italic; color: #6c757d;">
+                        <p>Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
+                        <p>This is an automatically generated audit report.</p>
+                        <p>PDF Generator Pro • All rights reserved</p>
+                    </div>
+                </div>
+            `;
+            
+            // Display preview
+            auditPdfContent.innerHTML = pdfHTML;
+            auditPdfPreview.style.display = 'block';
+            
+            // Scroll to preview
+            auditPdfPreview.scrollIntoView({ behavior: 'smooth' });
+            
+            showToast('PDF generated successfully. Click "Download PDF" to save.', 'success');
+        }
+
+        function downloadAuditPdf() {
+            if (AppState.auditEntries.length === 0) {
+                showToast('No data to download', 'warning');
+                return;
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            // Page dimensions
+            const pageWidth = 210;
+            const pageHeight = 297;
+            const margin = 20;
+            const bottomMargin = 20.32; // 0.8 inch in mm
+            
+            let currentPage = 1;
+            let yPos = margin;
+            
+            // Function to add a new page
+            const addNewPage = () => {
+                doc.addPage();
+                currentPage++;
+                yPos = margin;
+                
+                // Add header on every page
+                doc.setFontSize(22);
+                doc.setTextColor(114, 9, 183);
+                doc.text(auditHeading.value || 'Financial Audit Report', pageWidth / 2, yPos, { align: 'center' });
+                yPos += 10;
+                
+                doc.setFontSize(14);
+                doc.setTextColor(108, 117, 125);
+                doc.text(auditSubHeading.value || 'Q1 2023', pageWidth / 2, yPos, { align: 'center' });
+                yPos += 20;
+            };
+            
+            // Add first page header
+            doc.setFontSize(22);
+            doc.setTextColor(114, 9, 183);
+            doc.text(auditHeading.value || 'Financial Audit Report', pageWidth / 2, yPos, { align: 'center' });
+            yPos += 10;
+            
+            doc.setFontSize(14);
+            doc.setTextColor(108, 117, 125);
+            doc.text(auditSubHeading.value || 'Q1 2023', pageWidth / 2, yPos, { align: 'center' });
+            yPos += 15;
+            
+            // Add table header
+            if (yPos > pageHeight - bottomMargin - 20) {
+                addNewPage();
+            }
+            
+            doc.setFillColor(114, 9, 183);
+            doc.rect(margin, yPos, pageWidth - 2 * margin, 10, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(12);
+            doc.text('Subject', margin + 5, yPos + 7);
+            doc.text('Amount ($)', margin + 100, yPos + 7);
+            doc.text('Notes', margin + 150, yPos + 7);
+            
+            yPos += 15;
+            
+            // Add audit entries with pagination
+            AppState.auditEntries.forEach((entry, index) => {
+                // Check if we need a new page before adding row
+                if (yPos > pageHeight - bottomMargin - 10) {
+                    addNewPage();
+                    
+                    // Add table header on new page
+                    doc.setFillColor(114, 9, 183);
+                    doc.rect(margin, yPos, pageWidth - 2 * margin, 10, 'F');
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFontSize(12);
+                    doc.text('Subject', margin + 5, yPos + 7);
+                    doc.text('Amount ($)', margin + 100, yPos + 7);
+                    doc.text('Notes', margin + 150, yPos + 7);
+                    yPos += 15;
+                }
+                
+                // Alternate row background
+                if (index % 2 === 0) {
+                    doc.setFillColor(248, 249, 255);
+                    doc.rect(margin, yPos - 5, pageWidth - 2 * margin, 10, 'F');
+                }
+                
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(11);
+                doc.text(entry.subject, margin + 5, yPos);
+                doc.text('$' + entry.amount.toFixed(2), margin + 100, yPos);
+                doc.text('-', margin + 150, yPos);
+                
+                yPos += 10;
+            });
+            
+            // Ensure we have enough space for summary box and chart
+            if (yPos > pageHeight - bottomMargin - 80) {
+                addNewPage();
+            }
+            
+            yPos += 10;
+            
+            // Add summary box (only on last page)
+            doc.setDrawColor(114, 9, 183);
+            doc.setLineWidth(0.5);
+            doc.rect(margin, yPos, pageWidth - 2 * margin, 25);
+            
+            doc.setFontSize(14);
+            doc.setTextColor(33, 37, 41);
+            doc.text('Summary', margin + 5, yPos + 8);
+            
+            doc.setFontSize(12);
+            doc.setTextColor(108, 117, 125);
+            doc.text(`Total Entries: ${AppState.auditEntries.length}`, margin + 5, yPos + 17);
+            
+            doc.setFontSize(18);
+            doc.setTextColor(114, 9, 183);
+            doc.text(`Total: $${AppState.totalAuditAmount.toFixed(2)}`, pageWidth - margin - 60, yPos + 17);
+            
+            yPos += 40;
+            
+            // Generate and add donut chart
+            if (AppState.auditEntries.length > 0) {
+                try {
+                    // Create chart data
+                    const ctx = chartCanvas.getContext('2d');
+                    
+                    // Clear previous chart
+                    if (window.auditChart) {
+                        window.auditChart.destroy();
+                    }
+                    
+                    // Prepare data for chart
+                    const labels = AppState.auditEntries.map(entry => {
+                        // Shorten long labels
+                        return entry.subject.length > 15 ? 
+                               entry.subject.substring(0, 12) + '...' : 
+                               entry.subject;
+                    });
+                    
+                    const amounts = AppState.auditEntries.map(entry => entry.amount);
+                    
+                    // Create color palette
+                    const colors = [
+                        '#4361ee', '#7209b7', '#f72585', '#4cc9f0', 
+                        '#3a0ca3', '#560bad', '#7209b7', '#b5179e'
+                    ];
+                    
+                    // Create chart
+                    window.auditChart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                data: amounts,
+                                backgroundColor: colors.slice(0, AppState.auditEntries.length),
+                                borderWidth: 2,
+                                borderColor: '#ffffff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'right',
+                                    labels: {
+                                        font: {
+                                            size: 10
+                                        },
+                                        padding: 15
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Expense Distribution',
+                                    font: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    },
+                                    color: '#7209b7'
+                                }
+                            },
+                            cutout: '60%'
+                        }
+                    });
+                    
+                    // Convert chart to image and add to PDF
+                    const chartImage = chartCanvas.toDataURL('image/png');
+                    
+                    // Add chart title
+                    doc.setFontSize(16);
+                    doc.setTextColor(114, 9, 183);
+                    doc.text('Expense Distribution Chart', pageWidth / 2, yPos, { align: 'center' });
+                    yPos += 10;
+                    
+                    // Add chart image
+                    doc.addImage(chartImage, 'PNG', margin + 20, yPos, pageWidth - 2 * margin - 40, 80);
+                    yPos += 90;
+                    
+                } catch (error) {
+                    console.error('Error generating chart:', error);
+                    doc.setFontSize(12);
+                    doc.setTextColor(247, 37, 133);
+                    doc.text('Chart could not be generated', pageWidth / 2, yPos, { align: 'center' });
+                    yPos += 10;
+                }
+            }
+            
+            // Add footer on last page
+            doc.setFontSize(10);
+            doc.setTextColor(108, 117, 125);
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, margin, yPos);
+            doc.text('PDF Generator Pro • All rights reserved', pageWidth / 2, yPos, { align: 'center' });
+            
+            // Save the PDF
+            doc.save(`Audit-Report-${new Date().getTime()}.pdf`);
+            showToast('PDF downloaded successfully with chart!', 'success');
+        }
+
+        // Initialize the app when the page loads
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
